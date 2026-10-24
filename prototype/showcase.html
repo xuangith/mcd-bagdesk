@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="data:,">
+  <title>麦麦开袋台 · 原语展示</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="icon-burger" viewBox="0 0 64 64">
+      <path d="M10 27c0-10 10-17 22-17s22 7 22 17z" fill="#d9903d"/>
+      <path d="M22 17h3M32 14h3M41 18h3" stroke="#f6dfb0" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M7 31q4-4 8 0t8 0 8 0 8 0 8 0 8 0v3H7z" fill="#6fae4b"/>
+      <rect x="9" y="35" width="46" height="9" rx="4.5" fill="#6b3d27"/>
+      <path d="M10 46h44v2c0 5-4 8-9 8H19c-5 0-9-3-9-8z" fill="#d9903d"/>
+    </symbol>
+    <symbol id="icon-fries" viewBox="0 0 64 64">
+      <g fill="#f2c14e">
+        <rect x="17" y="8" width="7" height="30" rx="2" transform="rotate(-8 20 30)"/>
+        <rect x="26" y="4" width="7" height="34" rx="2"/>
+        <rect x="35" y="7" width="7" height="31" rx="2" transform="rotate(7 38 30)"/>
+        <rect x="43" y="12" width="7" height="26" rx="2" transform="rotate(14 46 30)"/>
+      </g>
+      <path d="M13 34h38l-4 24H17z" fill="#c9372c"/>
+      <path d="M25 40h14" stroke="#ffe6a8" stroke-width="3" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-drink" viewBox="0 0 64 64">
+      <path d="M38 4l-4 14" stroke="#c9372c" stroke-width="3.5" stroke-linecap="round"/>
+      <rect x="14" y="16" width="36" height="7" rx="3" fill="#dfe6ee"/>
+      <path d="M17 23h30l-3 33c0 2-2 4-4 4H24c-2 0-4-2-4-4z" fill="#f5f7fa"/>
+      <path d="M18.4 36h27.2l-1.1 12H19.5z" fill="#c9372c"/>
+    </symbol>
+    <symbol id="icon-other" viewBox="0 0 64 64">
+      <path d="M14 20h36l4 36H10z" fill="#e8bd84"/>
+      <path d="M22 20c0-8 4-12 10-12s10 4 10 12" fill="none" stroke="#a16c32" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M14 20h36l1 8H13z" fill="#a16c32"/>
+    </symbol>
+  </svg>
+
+  <header class="topbar">
+    <strong class="brand">麦麦开袋台 · 原语展示</strong>
+    <div class="tools">
+      <a class="btn btn-secondary" href="index.html" style="display:inline-flex;align-items:center;text-decoration:none">返回开袋台</a>
+      <label class="theme">主题
+        <select id="theme">
+          <option value="system" selected>跟随系统</option>
+          <option value="light">浅色</option>
+          <option value="dark">深色</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  <main>
+    <p class="note">本页只展示组件状态，数字来自合成样例经 state.mjs 现场计算；按钮不接入业务动作。</p>
+    <section class="panel"><h2>按钮</h2><div id="buttons" class="show-row"></div></section>
+    <section class="panel"><h2>状态与图标</h2><div id="pills" class="show-row"></div><div id="icons" class="show-row"></div></section>
+    <section class="panel"><h2>汇总</h2><div class="show-grid"><div id="sum-pending"></div><div id="sum-short"></div></div></section>
+    <section class="panel"><h2>餐品行与数量确认</h2><div id="rows"></div></section>
+    <section class="panel"><h2>领餐人卡片</h2><div class="show-grid"><ul id="card-blocked" class="people"></ul><ul id="card-ready" class="people"></ul><ul id="card-claimed" class="people"></ul></div></section>
+    <section class="panel"><h2>导入口径选择</h2><div id="import"></div></section>
+  </main>
+
+  <script type="module">
+    import { createDesk, reduceDesk, summarize } from "./state.mjs";
+    import { inspectOrder } from "./order.mjs";
+    import { demoOrder, rawDemoOrder } from "./sample.mjs";
+    import { blankDecisions, button, countersView, foodRow, icon, importFields, personCard, pill } from "./render.mjs";
+
+    const q = (s) => document.querySelector(s);
+    const ui = { opened: true, drafts: {}, flash: null, addOpen: false, demoNote: false };
+    const pending = createDesk(demoOrder);
+    const receive = (s, it, delta) => reduceDesk(s, { type: "receive", itemId: it.id, quantity: it.expected + delta });
+    const full = pending.items.reduce((s, it) => receive(s, it, 0), pending);
+    const mixed = pending.items.reduce((s, it, i) => (i < 3 ? receive(s, it, [0, -1, 1][i]) : s), pending);
+    const claimed = reduceDesk(full, { type: "claim", personId: full.people[0].id });
+    const card = (sel, state, i) => q(sel).append(personCard(state.people[i], state, summarize(state), ui));
+
+    q("#buttons").append(
+      button("主要操作", { variant: "primary" }), button("次要操作"), button("危险操作", { variant: "danger" }),
+      button("禁用状态", { variant: "primary", disabled: true }));
+    q("#pills").append(pill("pending", "未点数"), pill("warning", "缺件"), pill("warning", "超收"), pill("success", "已对齐"), pill("success", "已领取"), pill("synthetic", "合成团餐演示 · 非真实订单"));
+    q("#icons").append(...["burger", "fries", "drink", "other"].map((c) => icon(c, "icon icon-lg")));
+    q("#sum-pending").append(countersView(summarize(pending), ui));
+    q("#sum-short").append(countersView(summarize(mixed), ui));
+    q("#rows").append(...summarize(mixed).rows.map((r) => foodRow(r, ui)));
+    card("#card-blocked", pending, 0);
+    card("#card-ready", full, 1);
+    card("#card-claimed", claimed, 0);
+    const inspection = inspectOrder(rawDemoOrder);
+    q("#import").append(...importFields({ inspection, decisions: blankDecisions(inspection.lines) }));
+
+    q("#theme").addEventListener("change", (ev) => {
+      if (ev.target.value === "system") delete document.documentElement.dataset.theme;
+      else document.documentElement.dataset.theme = ev.target.value;
+    });
+  </script>
+</body>
+</html>

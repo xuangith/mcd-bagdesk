@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="多人团餐到货后的本地开袋验收与递餐记录。人工点数，看清缺件，记录每份餐的领取。">
+  <link rel="icon" href="data:,">
+  <title>麦麦开袋台</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="icon-burger" viewBox="0 0 64 64">
+      <path d="M10 27c0-10 10-17 22-17s22 7 22 17z" fill="#d9903d"/>
+      <path d="M22 17h3M32 14h3M41 18h3" stroke="#f6dfb0" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M7 31q4-4 8 0t8 0 8 0 8 0 8 0 8 0v3H7z" fill="#6fae4b"/>
+      <rect x="9" y="35" width="46" height="9" rx="4.5" fill="#6b3d27"/>
+      <path d="M10 46h44v2c0 5-4 8-9 8H19c-5 0-9-3-9-8z" fill="#d9903d"/>
+    </symbol>
+    <symbol id="icon-fries" viewBox="0 0 64 64">
+      <g fill="#f2c14e">
+        <rect x="17" y="8" width="7" height="30" rx="2" transform="rotate(-8 20 30)"/>
+        <rect x="26" y="4" width="7" height="34" rx="2"/>
+        <rect x="35" y="7" width="7" height="31" rx="2" transform="rotate(7 38 30)"/>
+        <rect x="43" y="12" width="7" height="26" rx="2" transform="rotate(14 46 30)"/>
+      </g>
+      <path d="M13 34h38l-4 24H17z" fill="#c9372c"/>
+      <path d="M25 40h14" stroke="#ffe6a8" stroke-width="3" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-drink" viewBox="0 0 64 64">
+      <path d="M38 4l-4 14" stroke="#c9372c" stroke-width="3.5" stroke-linecap="round"/>
+      <rect x="14" y="16" width="36" height="7" rx="3" fill="#dfe6ee"/>
+      <path d="M17 23h30l-3 33c0 2-2 4-4 4H24c-2 0-4-2-4-4z" fill="#f5f7fa"/>
+      <path d="M18.4 36h27.2l-1.1 12H19.5z" fill="#c9372c"/>
+    </symbol>
+    <symbol id="icon-other" viewBox="0 0 64 64">
+      <path d="M14 20h36l4 36H10z" fill="#e8bd84"/>
+      <path d="M22 20c0-8 4-12 10-12s10 4 10 12" fill="none" stroke="#a16c32" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M14 20h36l1 8H13z" fill="#a16c32"/>
+    </symbol>
+  </svg>
+  <a class="skip" href="#main">跳到主要内容</a>
+
+  <header class="topbar">
+    <strong class="brand">麦麦开袋台</strong>
+    <span id="source-badge" class="pill pill-synthetic">合成团餐演示 · 非真实订单</span>
+    <div class="tools">
+      <label class="theme">主题
+        <select id="theme">
+          <option value="system" selected>跟随系统</option>
+          <option value="light">浅色</option>
+          <option value="dark">深色</option>
+        </select>
+      </label>
+      <button type="button" id="undo" class="btn btn-secondary" data-action="undo" disabled>撤销</button>
+      <button type="button" class="btn btn-secondary" data-action="import-open">导入订单</button>
+      <button type="button" class="btn btn-danger" data-action="reset">恢复样例</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="order-title">
+      <svg id="bag" class="bag" viewBox="0 0 240 230" role="img" aria-label="原创牛皮纸餐袋插画，开袋后露出汉堡、薯条和饮品">
+        <ellipse class="bag-shadow" cx="120" cy="218" rx="88" ry="8"/>
+        <g class="peek">
+          <use href="#icon-fries" x="40" y="14" width="76" height="76"/>
+          <use href="#icon-burger" x="98" y="4" width="84" height="84"/>
+          <use href="#icon-drink" x="146" y="20" width="68" height="68"/>
+        </g>
+        <path class="bag-body" d="M36 74h168l10 128c0 8-6 14-14 14H40c-8 0-14-6-14-14z"/>
+        <path class="bag-fold" d="M172 74h32l10 128c0 8-6 14-14 14h-14z"/>
+        <rect class="bag-label" x="62" y="118" width="108" height="60" rx="10"/>
+        <text class="bag-text" x="116" y="156" text-anchor="middle">开袋台</text>
+        <path class="bag-fold" d="M36 74h168l-3-16H39z"/>
+        <path class="flap" d="M46 58h148l8 16H38z"/>
+      </svg>
+      <div class="hero-text">
+        <p class="eyebrow">先核对实收，再逐份递出</p>
+        <h1 id="order-title">麦麦开袋台</h1>
+        <p class="muted">清点袋里的餐品，记下每一份的去向。</p>
+        <div class="hero-actions">
+          <button type="button" id="start" class="btn btn-primary" data-action="open">开始开袋</button>
+        </div>
+        <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+        <p id="error" class="feedback feedback-error" role="alert"></p>
+      </div>
+    </section>
+
+    <nav class="work-tabs" aria-label="切换工作视图">
+      <button class="btn view-button" id="view-count" data-action="view-count" aria-pressed="true" aria-controls="count-panel">验收点数</button>
+      <button class="btn view-button" id="view-people" data-action="view-people" aria-pressed="false" aria-controls="people-panel">递餐记录 <span id="people-progress">0/12</span></button>
+    </nav>
+    <div class="layout">
+      <div class="column" id="count-panel">
+        <section class="panel" aria-labelledby="checklist-title">
+          <h2 id="checklist-title" tabindex="-1">验收清单</h2>
+          <div id="checklist" tabindex="-1"><div id="checklist-body"></div></div>
+          <div id="counters"></div>
+        </section>
+        <section class="panel" aria-labelledby="rows-title">
+          <div class="panel-head">
+            <h2 id="rows-title">逐项点数</h2>
+            <button type="button" id="demo-short" class="btn btn-secondary" data-action="demo-short">演示少一份</button>
+          </div>
+          <p class="muted">输入数量后必须按“确认数量”才会计入实收；未点数不等于 0。“演示少一份”是人工预设的演示操作。</p>
+          <div id="rows"></div>
+        </section>
+      </div>
+      <aside class="column" id="people-panel" aria-labelledby="people-title" hidden>
+        <section class="panel">
+          <h2 id="people-title">领餐人</h2>
+          <div id="people"></div>
+        </section>
+      </aside>
+    </div>
+    <p class="memory-note muted">刷新或关闭页面会清空本轮记录。数据只留在当前页面，不会上传。</p>
+  </main>
+
+  <dialog id="import" aria-labelledby="import-title">
+    <form method="dialog" class="dialog-head">
+      <h2 id="import-title">导入本地订单 JSON</h2>
+      <button type="submit" class="btn btn-secondary" value="cancel">关闭</button>
+    </form>
+    <div class="dialog-body">
+      <p class="note">只提取商品和数量，忽略地址、电话、订单号等字段；原文只留在这个对话框，关闭后清空。</p>
+      <label for="raw">订单 JSON</label>
+      <textarea id="raw" rows="8" spellcheck="false" maxlength="1000000" autocomplete="off"></textarea>
+      <div class="row-actions">
+        <label for="file" class="sr">本地 JSON 文件</label>
+        <input type="file" id="file" accept="application/json,.json">
+        <button type="button" class="btn btn-secondary" data-action="import-sample">载入演示导入样例</button>
+        <button type="button" class="btn btn-primary" data-action="import-check">检查订单</button>
+      </div>
+      <p id="import-error" class="feedback feedback-error" role="alert"></p>
+      <div id="import-lines"></div>
+    </div>
+    <div class="dialog-foot">
+      <p id="import-hint" class="muted">请先检查订单。</p>
+      <p id="import-replace" class="note" tabindex="-1" hidden>这会替换当前清单及全部点数、领取记录，无法撤销。确认替换时请再按一次按钮。</p>
+      <button type="button" id="import-go" class="btn btn-primary" data-action="import-confirm" disabled>确认生成应收清单</button>
+    </div>
+  </dialog>
+
+  <dialog id="confirm" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+    <form method="dialog" class="dialog-body">
+      <h2 id="confirm-title">确认操作</h2>
+      <p id="confirm-text">请确认。</p>
+      <div class="row-actions">
+        <button type="submit" class="btn btn-secondary" value="cancel" autofocus>取消</button>
+        <button type="submit" class="btn btn-danger" id="confirm-ok" value="ok">确认</button>
+      </div>
+    </form>
+  </dialog>
+
+  <noscript><p class="note">需要启用 JavaScript 才能使用开袋台。</p></noscript>
+  <script type="module" src="app.mjs"></script>
+</body>
+</html>
