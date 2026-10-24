@@ -1,0 +1,10 @@
+token.txt
+.env
+.env.*
+!.env.example
+.omo/
+node_modules/
+coverage/
+*.log
+*.zip
+dist/
